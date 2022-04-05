@@ -8,15 +8,12 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 
-namespace ToDoList
-{
-    public static class Test
-    {
+namespace ToDoList {
+    public static class Test {
         [FunctionName("Test")]
         public static async Task<IActionResult> Run(
             [HttpTrigger(AuthorizationLevel.Function, "get", "post", Route = null)] HttpRequest req,
-            ILogger log)
-        {
+            ILogger log) {
             log.LogInformation("C# HTTP trigger function processed a request.");
 
             string name = req.Query["name"];
