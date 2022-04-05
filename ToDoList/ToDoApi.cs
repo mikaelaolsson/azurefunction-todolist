@@ -40,35 +40,44 @@ namespace ToDoList
                 Status = Status.NotStarted
             };
 
-            var table = todo.ToTable();
-
-            await toDoTableCollector.AddAsync(table);
+            await toDoTableCollector.AddAsync(todo.ToTable());
 
             return new OkObjectResult(todo);
         }
 
-        [FunctionName("GetAll")]
-        public static async Task<IActionResult> GetAll(
+        [FunctionName("Get")]
+        public static async Task<IActionResult> Get(
             [HttpTrigger(AuthorizationLevel.Function, "get", Route = TableName)] HttpRequest req,
             [Table(TableName, Connection = "AzureWebJobsStorage")] CloudTable cloudTable,
             ILogger log)
         {
-            log.LogInformation("Getting all Todos");
+            log.LogInformation("Getting all Todos, or with status-filter");
 
+            string status = req.Query["status"];
+
+            // ev lägga till orderby?
             TableQuery<ToDoTableEntity> query = new TableQuery<ToDoTableEntity>();
             var segment = await cloudTable.ExecuteQuerySegmentedAsync(query, null);
             var data = segment.Select(ToDoExtensions.ToToDo);
 
+            if (status != null)
+            {
+                if (Enum.TryParse(status, true, out Status currentStatus))
+                {
+                    data = data.Where(t => t.Status == currentStatus);
+                }
+            }
+
             return new OkObjectResult(data);
         }
         // This might not be needed
-        [FunctionName("GetTodoById")]
-        public static IActionResult GetTodoById(
+        [FunctionName("GetById")]
+        public static IActionResult GetById(
             [HttpTrigger(AuthorizationLevel.Function, "get", Route = TableName + "/{id}")] HttpRequest req,
             [Table(TableName, "TODO", "{id}", Connection = "AzureWebJobsStorage")] ToDoTableEntity toDoTable,
             ILogger log, string id)
         {
-            log.LogInformation("Getting Todos by Id");
+            log.LogInformation("Getting a todo by Id");
 
             if (toDoTable == null)
             {
@@ -105,7 +114,7 @@ namespace ToDoList
             string requestBody = await new StreamReader(request.Body).ReadToEndAsync();
             var data = JsonConvert.DeserializeObject<TodoDto>(requestBody);
 
-            if (!String.IsNullOrEmpty(data.Text)) 
+            if (!String.IsNullOrEmpty(data.Text))
             {
                 toDoTable.Text = data.Text;
             }
@@ -113,7 +122,7 @@ namespace ToDoList
             {
                 toDoTable.Status = (int)data.Status;
             }
-            
+
             var updateOperation = TableOperation.Replace(toDoTable);
             var result = await cloudTable.ExecuteAsync(updateOperation);
             return new OkObjectResult(result);
