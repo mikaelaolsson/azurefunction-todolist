@@ -27,7 +27,7 @@ namespace ToDoList
             log.LogInformation("Adding new Todo");
 
             var requestBody = await new StreamReader(req.Body).ReadToEndAsync();
-            var input = JsonConvert.DeserializeObject<TodoDto>(requestBody);
+            var input = JsonConvert.DeserializeObject<ToDoDto>(requestBody);
 
             if (input.Text == null)
             {
@@ -112,7 +112,7 @@ namespace ToDoList
             log.LogInformation("Update a todo");
 
             string requestBody = await new StreamReader(request.Body).ReadToEndAsync();
-            var data = JsonConvert.DeserializeObject<TodoDto>(requestBody);
+            var data = JsonConvert.DeserializeObject<ToDoDto>(requestBody);
 
             if (!String.IsNullOrEmpty(data.Text))
             {
