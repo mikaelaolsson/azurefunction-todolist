@@ -5,6 +5,7 @@ using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.Http;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
+using System;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
@@ -36,7 +37,6 @@ namespace ToDoList
             var todo = new ToDo
             {
                 Text = input.Text,
-                // Den lägger till rätt status men den sparar den INTE
                 Status = Status.NotStarted
             };
 
@@ -82,8 +82,8 @@ namespace ToDoList
         [FunctionName("Delete")]
         public static async Task<IActionResult> Delete(
             [HttpTrigger(AuthorizationLevel.Function, "delete", Route = TableName + "/{partitionKey}/{rowKey}")] HttpRequest req,
-            [Table("todos", "{partitionKey}", "{rowKey}")] ToDoTableEntity toDoTable,
-            [Table("todos")] CloudTable cloudTable,
+            [Table(TableName, "{partitionKey}", "{rowKey}")] ToDoTableEntity toDoTable,
+            [Table(TableName)] CloudTable cloudTable,
             ILogger log)
         {
             log.LogInformation("Delete a todo");
@@ -92,15 +92,12 @@ namespace ToDoList
             var result = await cloudTable.ExecuteAsync(deleteOperation);
             return new OkObjectResult(result);
         }
-        // Update: bara ändra status eller också ändra texten? hmm
-        // ev ha dem uppdelade? en för status, en för text
-        // Parse för Enum Status?
 
         [FunctionName("Update")]
         public static async Task<IActionResult> Update(
             [HttpTrigger(AuthorizationLevel.Function, "put", Route = TableName + "/{partitionKey}/{rowKey}")] HttpRequest request,
-            [Table("todos", "{partitionKey}", "{rowKey}")] ToDoTableEntity toDoTable,
-            [Table("todos")] CloudTable cloudTable,
+            [Table(TableName, "{partitionKey}", "{rowKey}")] ToDoTableEntity toDoTable,
+            [Table(TableName)] CloudTable cloudTable,
             ILogger log)
         {
             log.LogInformation("Update a todo");
@@ -108,10 +105,15 @@ namespace ToDoList
             string requestBody = await new StreamReader(request.Body).ReadToEndAsync();
             var data = JsonConvert.DeserializeObject<TodoDto>(requestBody);
 
-            toDoTable.Text = data.Text;
-            toDoTable.Status = data.Status;
-
-
+            if (!String.IsNullOrEmpty(data.Text)) 
+            {
+                toDoTable.Text = data.Text;
+            }
+            if (data.Status != Status.NoInformation)
+            {
+                toDoTable.Status = (int)data.Status;
+            }
+            
             var updateOperation = TableOperation.Replace(toDoTable);
             var result = await cloudTable.ExecuteAsync(updateOperation);
             return new OkObjectResult(result);

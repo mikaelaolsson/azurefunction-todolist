@@ -17,6 +17,7 @@ namespace ToDoList.Models
 
     public enum Status
     {
+        NoInformation,
         NotStarted,
         InProgress,
         Completed

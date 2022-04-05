@@ -10,7 +10,7 @@
                 RowKey = todo.Id,
                 Created = todo.Created,
                 Text = todo.Text,
-                Status = todo.Status
+                Status = (int)todo.Status
             };
         }
         public static ToDo ToToDo(this ToDoTableEntity todoTable)
@@ -20,7 +20,7 @@
                 Id = todoTable.RowKey,
                 Created = todoTable.Created,
                 Text = todoTable.Text,
-                Status = todoTable.Status
+                Status = (Status)todoTable.Status
             };
         }
     }
