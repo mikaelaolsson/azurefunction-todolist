@@ -23,7 +23,7 @@ namespace ToDoList {
         private const string HistoryTable = "histories";
 
         [FunctionName("Create")]
-        [OpenApiOperation(operationId: "Create", tags: new[] { "Create Todo" })]
+        [OpenApiOperation(operationId: "Create", tags: new[] { "Todos" })]
         [OpenApiSecurity("function_key", SecuritySchemeType.ApiKey, Name = "code", In = OpenApiSecurityLocationType.Query)]
         [OpenApiRequestBody(contentType: "text/json", bodyType: typeof(ToDoCreateModel), Required = true, Description = "Add todo")]
         [OpenApiResponseWithBody(statusCode: HttpStatusCode.OK, contentType: "text/json", bodyType: typeof(ToDo), Description = "The OK response")]
@@ -51,7 +51,7 @@ namespace ToDoList {
         }
 
         [FunctionName("Get")]
-        [OpenApiOperation(operationId: "Get", tags: new[] { "Get Todos" })]
+        [OpenApiOperation(operationId: "Get", tags: new[] { "Todos" })]
         [OpenApiSecurity("function_key", SecuritySchemeType.ApiKey, Name = "code", In = OpenApiSecurityLocationType.Query)]
         [OpenApiParameter(name: "status", In = ParameterLocation.Query, Required = false, Type = typeof(string), Description = "The **Status** parameter")]
         [OpenApiParameter(name: "id", In = ParameterLocation.Query, Required = false, Type = typeof(string), Description = "The **ID** parameter")]
@@ -81,7 +81,7 @@ namespace ToDoList {
         }
 
         [FunctionName("DeleteMany")]
-        [OpenApiOperation(operationId: "Delete", tags: new[] { "Delete Todos" })]
+        [OpenApiOperation(operationId: "Delete", tags: new[] { "Todos" })]
         [OpenApiSecurity("function_key", SecuritySchemeType.ApiKey, Name = "code", In = OpenApiSecurityLocationType.Query)]
         [OpenApiParameter(name: "status", In = ParameterLocation.Query, Required = false, Type = typeof(string), Description = "The **Status** parameter")]
         [OpenApiParameter(name: "id", In = ParameterLocation.Query, Required = false, Type = typeof(string), Description = "The **ID** parameter")]
@@ -89,6 +89,7 @@ namespace ToDoList {
         public static async Task<IActionResult> DeleteMany(
             [HttpTrigger(AuthorizationLevel.Function, "delete", Route = TableName)] HttpRequest req,
             [Table(TableName, Connection = "AzureWebJobsStorage")] CloudTable cloudTable,
+            [Table(HistoryTable, Connection = "AzureWebJobsStorage")] CloudTable historyTable,
             ILogger log) {
             log.LogInformation("Deleting all todos, or delete by status/id");
 
@@ -96,8 +97,11 @@ namespace ToDoList {
             string id = req.Query["id"];
             TableContinuationToken token = null;
 
+            // Do not like: att behöva hämta allt för att SEDAN filtrera..
             TableQuery<ToDoTableEntity> query = new();
+            TableQuery<HistoryTableEntity> historyQuery = new();
             var segment = await cloudTable.ExecuteQuerySegmentedAsync(query, token);
+            var historySegment = await historyTable.ExecuteQuerySegmentedAsync(historyQuery, token); // maybe null
             var data = segment.ToList();
 
             if (!String.IsNullOrEmpty(status) && Enum.TryParse(status, true, out Status currentStatus)) {
@@ -110,6 +114,13 @@ namespace ToDoList {
 
             do {
                 foreach (var row in data) {
+
+                    var history = historySegment.Where(h => h.ToDoId == row.RowKey);
+                    foreach (var item in history) {
+                        var op = TableOperation.Delete(item);
+                        historyTable.Execute(op);
+                    }
+
                     var operation = TableOperation.Delete(row);
                     cloudTable.Execute(operation);
                 }
@@ -119,7 +130,7 @@ namespace ToDoList {
         }
 
         [FunctionName("Update")]
-        [OpenApiOperation(operationId: "Update", tags: new[] { "Update todo" })]
+        [OpenApiOperation(operationId: "Update", tags: new[] { "Todos" })]
         [OpenApiSecurity("function_key", SecuritySchemeType.ApiKey, Name = "code", In = OpenApiSecurityLocationType.Query)]
         [OpenApiParameter(name: "id", In = ParameterLocation.Query, Required = true, Type = typeof(string), Description = "The **ID** parameter")]
         [OpenApiRequestBody(contentType: "text/json", bodyType: typeof(ToDoUpdateModel), Required = false, Description = "Update todo")]
