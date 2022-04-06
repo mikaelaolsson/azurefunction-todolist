@@ -20,6 +20,7 @@ using ToDoList.Models;
 namespace ToDoList {
     public class ToDoApi {
         private const string TableName = "todos";
+        private const string HistoryTable = "histories";
 
         [FunctionName("Create")]
         [OpenApiOperation(operationId: "Create", tags: new[] { "Create Todo" })]
@@ -69,10 +70,8 @@ namespace ToDoList {
             var segment = await cloudTable.ExecuteQuerySegmentedAsync(query, null);
             var data = segment.Select(ToDoExtensions.ToToDo);
 
-            if (!String.IsNullOrEmpty(status)) {
-                if (Enum.TryParse(status, true, out Status currentStatus)) {
-                    data = data.Where(t => t.Status == currentStatus);
-                }
+            if (!String.IsNullOrEmpty(status) && Enum.TryParse(status, true, out Status currentStatus)) {
+                data = data.Where(t => t.Status == currentStatus);
             }
             if (!String.IsNullOrEmpty(id)) {
                 data = data.Where(t => t.Id == id);
@@ -101,10 +100,9 @@ namespace ToDoList {
             var segment = await cloudTable.ExecuteQuerySegmentedAsync(query, token);
             var data = segment.ToList();
 
-            if (!String.IsNullOrEmpty(status)) {
-                if (Enum.TryParse(status, true, out Status currentStatus)) {
-                    data = segment.Where(t => t.Status == currentStatus.ToString()).ToList();
-                }
+            if (!String.IsNullOrEmpty(status) && Enum.TryParse(status, true, out Status currentStatus)) {
+                data = segment.Where(t => t.Status == currentStatus.ToString()).ToList();
+
             }
             if (!String.IsNullOrEmpty(id)) {
                 data = segment.Where(t => t.RowKey == id).ToList();
@@ -129,6 +127,7 @@ namespace ToDoList {
         public static async Task<IActionResult> Update(
             [HttpTrigger(AuthorizationLevel.Function, "put", Route = TableName)] HttpRequest req,
             [Table(TableName, Connection = "AzureWebJobsStorage")] CloudTable cloudTable,
+            [Table(HistoryTable, Connection = "AzureWebJobsStorage")] IAsyncCollector<HistoryTableEntity> historyCollector,
             ILogger log) {
             log.LogInformation("Update a todo");
 
@@ -149,19 +148,35 @@ namespace ToDoList {
             var requestBody = await new StreamReader(req.Body).ReadToEndAsync();
             var data = JsonConvert.DeserializeObject<ToDoUpdateModel>(requestBody);
 
+            var history = new History { 
+                ToDoId = toDoTable.RowKey,
+                Created = toDoTable.Created,
+                Edited = DateTimeOffset.Now,
+                OldStatus = (Status)Enum.Parse(typeof(Status), toDoTable.Status, true),
+                OldText = toDoTable.Text
+            };
+
             if (!String.IsNullOrEmpty(data.Text)) {
                 toDoTable.Text = data.Text;
+                history.CurrentText = data.Text;
             }
-            if (!String.IsNullOrEmpty(data.Status)) {
-                if (Enum.TryParse(data.Status, true, out Status currentStatus)) {
-                    if ((int)currentStatus >= 0 && (int)currentStatus <= 2) {
-                        toDoTable.Status = currentStatus.ToString();
-                    }
-                }
+            else {
+                history.CurrentText = history.OldText;
+            }
+            // Fult med intervallet för currentStatus. Ej bra om det läggs till typ av Status..
+            if (!String.IsNullOrEmpty(data.Status) && Enum.TryParse(data.Status, true, out Status currentStatus) && (int)currentStatus >= 0 && (int)currentStatus <= 2) {
+                toDoTable.Status = currentStatus.ToString();
+                history.CurrentStatus = currentStatus;
+            }
+            else {
+                history.CurrentStatus = history.OldStatus;
             }
             toDoTable.Updated = DateTimeOffset.Now;
             var updateOperation = TableOperation.Replace(toDoTable);
             var result = await cloudTable.ExecuteAsync(updateOperation);
+
+            await historyCollector.AddAsync(history.ToHistoryTable());
+
             return new OkObjectResult(result);
         }
     }
