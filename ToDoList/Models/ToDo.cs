@@ -5,7 +5,8 @@ namespace ToDoList.Models {
         public string Id { get; set; } = Guid.NewGuid().ToString();
         public string Text { get; set; }
         public Status? Status { get; set; }
-        public DateTime Created { get; set; } = DateTime.Now;
+        public DateTimeOffset Created { get; set; } = DateTimeOffset.Now;
+        public DateTimeOffset Updated { get; set; } = DateTimeOffset.Now;
     }
 
     public enum Status {

@@ -7,6 +7,7 @@ namespace ToDoList.Models {
                 PartitionKey = "TODO",
                 RowKey = todo.Id,
                 Created = todo.Created,
+                Updated = todo.Updated,
                 Text = todo.Text,
                 Status = todo.Status.ToString()
             };
@@ -15,6 +16,7 @@ namespace ToDoList.Models {
             return new ToDo {
                 Id = todoTable.RowKey,
                 Created = todoTable.Created,
+                Updated = todoTable.Updated,
                 Text = todoTable.Text,
                 Status =  (Status)Enum.Parse(typeof(Status), todoTable.Status, true)
             };

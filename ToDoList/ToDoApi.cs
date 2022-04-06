@@ -159,7 +159,7 @@ namespace ToDoList {
                     }
                 }
             }
-
+            toDoTable.Updated = DateTimeOffset.Now;
             var updateOperation = TableOperation.Replace(toDoTable);
             var result = await cloudTable.ExecuteAsync(updateOperation);
             return new OkObjectResult(result);
