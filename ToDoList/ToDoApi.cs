@@ -33,14 +33,14 @@ namespace ToDoList {
             log.LogInformation("Adding new Todo");
 
             var requestBody = await new StreamReader(req.Body).ReadToEndAsync();
-            var input = JsonConvert.DeserializeObject<ToDoUpdateModel>(requestBody);
+            var data = JsonConvert.DeserializeObject<ToDoUpdateModel>(requestBody);
 
-            if (String.IsNullOrEmpty(input.Text)) {
+            if (String.IsNullOrEmpty(data.Text)) {
                 return new BadRequestObjectResult("Please provide some text");
             }
 
             var todo = new ToDo {
-                Text = input.Text,
+                Text = data.Text,
                 Status = Status.NotStarted
             };
 
@@ -59,13 +59,13 @@ namespace ToDoList {
             [HttpTrigger(AuthorizationLevel.Function, "get", Route = TableName)] HttpRequest req,
             [Table(TableName, Connection = "AzureWebJobsStorage")] CloudTable cloudTable,
             ILogger log) {
-            log.LogInformation("Getting all todos, or get todos by status");
+            log.LogInformation("Getting all todos, or get todos by status/id");
 
             string status = req.Query["status"];
             string id = req.Query["id"];
 
             // ev lägga till orderby?
-            TableQuery<ToDoTableEntity> query = new TableQuery<ToDoTableEntity>();
+            TableQuery<ToDoTableEntity> query = new();
             var segment = await cloudTable.ExecuteQuerySegmentedAsync(query, null);
             var data = segment.Select(ToDoExtensions.ToToDo);
 
@@ -91,19 +91,19 @@ namespace ToDoList {
             [HttpTrigger(AuthorizationLevel.Function, "delete", Route = TableName)] HttpRequest req,
             [Table(TableName, Connection = "AzureWebJobsStorage")] CloudTable cloudTable,
             ILogger log) {
-            log.LogInformation("Deleting all todos, or delete by status");
+            log.LogInformation("Deleting all todos, or delete by status/id");
 
             string status = req.Query["status"];
             string id = req.Query["id"];
             TableContinuationToken token = null;
 
-            TableQuery<ToDoTableEntity> query = new TableQuery<ToDoTableEntity>();
+            TableQuery<ToDoTableEntity> query = new();
             var segment = await cloudTable.ExecuteQuerySegmentedAsync(query, token);
             var data = segment.ToList();
 
             if (!String.IsNullOrEmpty(status)) {
                 if (Enum.TryParse(status, true, out Status currentStatus)) {
-                    data = segment.Where(t => t.Status == (int)currentStatus).ToList();
+                    data = segment.Where(t => t.Status == currentStatus.ToString()).ToList();
                 }
             }
             if (!String.IsNullOrEmpty(id)) {
@@ -121,21 +121,43 @@ namespace ToDoList {
         }
 
         [FunctionName("Update")]
+        [OpenApiOperation(operationId: "Update", tags: new[] { "Update todo" })]
+        [OpenApiSecurity("function_key", SecuritySchemeType.ApiKey, Name = "code", In = OpenApiSecurityLocationType.Query)]
+        [OpenApiParameter(name: "id", In = ParameterLocation.Query, Required = true, Type = typeof(string), Description = "The **ID** parameter")]
+        [OpenApiRequestBody(contentType: "text/json", bodyType: typeof(ToDoUpdateModel), Required = false, Description = "Update todo")]
+        [OpenApiResponseWithBody(statusCode: HttpStatusCode.OK, contentType: "text/json", bodyType: typeof(ToDo), Description = "The OK response")]
         public static async Task<IActionResult> Update(
-            [HttpTrigger(AuthorizationLevel.Function, "put", Route = TableName + "/{partitionKey}/{rowKey}")] HttpRequest req,
-            [Table(TableName, "{partitionKey}", "{rowKey}")] ToDoTableEntity toDoTable,
-            [Table(TableName)] CloudTable cloudTable,
+            [HttpTrigger(AuthorizationLevel.Function, "put", Route = TableName)] HttpRequest req,
+            [Table(TableName, Connection = "AzureWebJobsStorage")] CloudTable cloudTable,
             ILogger log) {
             log.LogInformation("Update a todo");
 
-            string requestBody = await new StreamReader(req.Body).ReadToEndAsync();
+            string id = req.Query["id"];
+
+            if (String.IsNullOrEmpty(id)) {
+                return new BadRequestObjectResult("Please provide a valid id");
+            }
+
+            TableQuery<ToDoTableEntity> query = new();
+            var segment = await cloudTable.ExecuteQuerySegmentedAsync(query, null);
+            var toDoTable = segment.FirstOrDefault(t => t.RowKey == id);
+
+            if (toDoTable == null) {
+                return new BadRequestObjectResult("There are no todos with that id");
+            }
+
+            var requestBody = await new StreamReader(req.Body).ReadToEndAsync();
             var data = JsonConvert.DeserializeObject<ToDoUpdateModel>(requestBody);
 
             if (!String.IsNullOrEmpty(data.Text)) {
                 toDoTable.Text = data.Text;
             }
-            if (data.Status != null) {
-                toDoTable.Status = (int)data.Status;
+            if (!String.IsNullOrEmpty(data.Status)) {
+                if (Enum.TryParse(data.Status, true, out Status currentStatus)) {
+                    if ((int)currentStatus >= 0 && (int)currentStatus <= 2) {
+                        toDoTable.Status = currentStatus.ToString();
+                    }
+                }
             }
 
             var updateOperation = TableOperation.Replace(toDoTable);

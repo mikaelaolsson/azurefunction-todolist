@@ -1,4 +1,6 @@
-﻿namespace ToDoList.Models {
+﻿using System;
+
+namespace ToDoList.Models {
     public static class ToDoExtensions {
         public static ToDoTableEntity ToTable(this ToDo todo) {
             return new ToDoTableEntity {
@@ -6,7 +8,7 @@
                 RowKey = todo.Id,
                 Created = todo.Created,
                 Text = todo.Text,
-                Status = (int)todo.Status
+                Status = todo.Status.ToString()
             };
         }
         public static ToDo ToToDo(this ToDoTableEntity todoTable) {
@@ -14,7 +16,7 @@
                 Id = todoTable.RowKey,
                 Created = todoTable.Created,
                 Text = todoTable.Text,
-                Status = (Status)todoTable.Status
+                Status =  (Status)Enum.Parse(typeof(Status), todoTable.Status, true)
             };
         }
     }
