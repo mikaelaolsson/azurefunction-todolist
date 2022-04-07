@@ -18,7 +18,7 @@ namespace ToDoList.Models {
                 Created = todoTable.Created,
                 Updated = todoTable.Updated,
                 Text = todoTable.Text,
-                Status =  (Status)Enum.Parse(typeof(Status), todoTable.Status, true)
+                Status = (Status)Enum.Parse(typeof(Status), todoTable.Status, true)
             };
         }
     }

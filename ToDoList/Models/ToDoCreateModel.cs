@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace ToDoList.Models {
+﻿namespace ToDoList.Models {
     public class ToDoCreateModel {
         public string Text { get; set; }
     }

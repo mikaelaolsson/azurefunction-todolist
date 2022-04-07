@@ -101,12 +101,11 @@ namespace ToDoList {
             TableQuery<ToDoTableEntity> query = new();
             TableQuery<HistoryTableEntity> historyQuery = new();
             var segment = await cloudTable.ExecuteQuerySegmentedAsync(query, token);
-            var historySegment = await historyTable.ExecuteQuerySegmentedAsync(historyQuery, token); // maybe null
+            var historySegment = await historyTable.ExecuteQuerySegmentedAsync(historyQuery, token);
             var data = segment.ToList();
 
             if (!String.IsNullOrEmpty(status) && Enum.TryParse(status, true, out Status currentStatus)) {
                 data = segment.Where(t => t.Status == currentStatus.ToString()).ToList();
-
             }
             if (!String.IsNullOrEmpty(id)) {
                 data = segment.Where(t => t.RowKey == id).ToList();
