@@ -34,12 +34,12 @@ namespace ToDoList {
 
             TableQuery<HistoryTableEntity> query = new();
             var segment = await cloudTable.ExecuteQuerySegmentedAsync(query, null);
-            var data = segment.Select(HistoryExtensions.ToHistory).OrderBy(h => h.ToDoId).ThenByDescending(h => h.Edited);
+            var data = segment.Select(HistoryExtensions.ToHistory);
 
             if (!String.IsNullOrEmpty(todoId)) {
-                data = (IOrderedEnumerable<History>)data.Where(t => t.Id == todoId);
+                data = data.Where(t => t.ToDoId == todoId);
             }
-
+            data = data.OrderBy(h => h.ToDoId).ThenByDescending(h => h.Edited);
             return new OkObjectResult(data);
         }
 
