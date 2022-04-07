@@ -79,7 +79,7 @@ namespace ToDoList {
             return new OkObjectResult(data);
         }
 
-        [FunctionName("DeleteMany")]
+        [FunctionName("Delete")]
         [OpenApiOperation(operationId: "Delete", tags: new[] { "Todos" })]
         [OpenApiSecurity("function_key", SecuritySchemeType.ApiKey, Name = "code", In = OpenApiSecurityLocationType.Query)]
         [OpenApiParameter(name: "status", In = ParameterLocation.Query, Required = false, Type = typeof(string), Description = "The **Status** parameter")]
