@@ -65,16 +65,15 @@ namespace ToDoList {
             string status = req.Query["status"];
             string id = req.Query["id"];
 
-            // ev lägga till orderby?
             TableQuery<ToDoTableEntity> query = new();
             var segment = await cloudTable.ExecuteQuerySegmentedAsync(query, null);
-            var data = segment.Select(ToDoExtensions.ToToDo);
+            var data = segment.Select(ToDoExtensions.ToToDo).OrderByDescending(t => t.Created);
 
             if (!String.IsNullOrEmpty(status) && Enum.TryParse(status, true, out Status currentStatus)) {
-                data = data.Where(t => t.Status == currentStatus);
+                data = (IOrderedEnumerable<ToDo>)data.Where(t => t.Status == currentStatus);
             }
             if (!String.IsNullOrEmpty(id)) {
-                data = data.Where(t => t.Id == id);
+                data = (IOrderedEnumerable<ToDo>)data.Where(t => t.Id == id);
             }
 
             return new OkObjectResult(data);
