@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="author" content="Mikaela">
+    <meta name="description" content="This is just a little todolist :)">
+    <script src="main.js" defer></script>
+    <link rel="stylesheet" href="https://use.fontawesome.com/d0981ca4c1.css">
+    <link rel="stylesheet" href="style.css">
+    <title>todos</title>
+</head>
+<body>
+
+    <div class="container">
+        <div id="to-do-app" class="to-do-list">
+            <h1><a href="#">todos</a></h1>
+            <i id="clear-list" class="fa fa-chevron-circle-down" title="Clear All"></i>
+            <span id="title-date" class="title-date">April 11, 2022</span>
+            
+            <div id="task-container" class="task-container">
+                <input type="text" id="task" placeholder="What needs to be done?">
+                <button id="add-task">+</button>
+            </div>
+
+            <div class="filter-buttons">
+                <button id="all" class="selected">All</button>
+                <button id="not-started">Not Started</button>
+                <button id="in-progress">In Progress</button>
+                <button id="completed">Completed</button>
+            </div>
+
+            <div class="tasker-container">
+                <ol id="tasks-ol">
+                    <template>
+                        <li>
+                            <div id="todo" title="Doubleclick to edit!">
+                                <label class="todo-text"></label>
+                                <i class="fa fa-history history-button" title="History"></i>
+                                <div class="status">
+                                    <i class="fa fa-trash-o delete-button" title="Delete"></i>
+                                        <div class="selectWrapper">
+                                            <select name="status" title="Status">
+                                                <option value="NotStarted">Not Started</option>
+                                                <option value="InProgress">In Progress</option>
+                                                <option value="Completed">Completed</option>
+                                            </select>                                        
+                                        </div>
+                                </div>
+                            </div>
+                            <textarea class="edit" value=""></textarea>
+                        </li>
+                    </template>
+                </ol>
+            </div>
+        </div>
+    </div>
+
+
+
+
+    <div id="clear-list-popup" class="modal">
+
+        <div class="modal-content">
+          <span class="close">&times;</span>
+          <p>Do you want to delete your todos?</p>
+          <div class="wrapper">
+            <div class="selectWrapper">
+                <select name="status">
+                    <option value="">All</option>
+                    <option value="NotStarted">Not Started</option>
+                    <option value="InProgress">In Progress</option>
+                    <option value="Completed">Completed</option>
+                </select>                                        
+            </div>
+
+            <i id="clear" class="fa fa-trash-o" title="Delete"></i>
+          </div>
+            
+        </div>
+      
+    </div>
+
+    <div id="history-popup" class="modal">
+
+        <div class="modal-content history">
+            <p>History</p>
+            <span class="close">&times;</span>
+                <div class="history-wrap">
+                </div>
+            
+            <div id="no-history">There is no history for this item.</div>
+            
+            <template id="status-change">
+                <div class="changes">
+                    <div class="datetime">
+                        <p class="edit-date">2022-04-13</p>
+                        <p class="edit-time">09:01:37</p>
+                    </div>
+                    <p class="old-status">Not Started</p> 🠚 <p class="current-status">Not Started</p>
+                </div>
+            </template>
+            <template id="text-change">
+                <div class="changes">
+                    <div class="datetime">
+                        <p class="edit-date">2022-04-13</p>
+                        <p class="edit-time">09:01:37</p>
+                    </div>
+                    <p class="old-text">be sneaky</p> 🠚 <p class="current-text">be even more sneaky</p>
+                </div>
+            </template>
+        </div>
+      
+    </div>
+
+
+</body>
+</html>
