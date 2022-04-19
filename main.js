@@ -1,5 +1,6 @@
 const api = "https://azuefunction-todolist.azurewebsites.net/api/";
-const code = "?code={INSERTAZURECODEHERE}";
+// this should obvisouly not be here, plz remove
+const code = "?code=KDiNc0Gsf2ECculrun8Dda9YckgN4uGVq4kIm4mPS5pZfnsjtFOOjA==";
 
 const todoList = document.getElementById('tasks-ol');
 let template = document.querySelector("template");
@@ -199,8 +200,12 @@ addButton.onclick = async () => {
 clearButton.onclick = function() {
     let status = (location.hash).replace("#", "");
     status = status.replace("-", "");
-
+    if (status === "") {
+        status = "All";
+    }
     clearSelectList.value = status;
+    clearSelectList.className = "";
+    clearSelectList.classList.add(status);
     clearPopup.style.display = "block";
 }
 clearClose.onclick = function() {
@@ -240,21 +245,21 @@ function onChange() {
     buttons.forEach(button => {
         button.classList.remove("selected");
     });
+    clearSelectList.className = "";
 
     if (location.hash !== "") {
         filter = (location.hash).replace("#", "");
-        console.log(filter);
         let id = filter.toLowerCase();
         document.getElementById(id).classList.add("selected");
 
         filter = filter.replace("-", "");
-        console.log(filter)
         clearSelectList.classList.add(filter);
         loadTodos();
     }
     else {
         filter = null;
         showAll.classList.add("selected");
+        clearSelectList.classList.add("All");
         loadTodos();
     }
 }
